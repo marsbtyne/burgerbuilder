@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import Aux from '../../hoc/Aux'
 import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/Burger/BuildControls/BuildControls';
+import Modal from '../../components/UI/Modal/Modal';
+import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary';
 
 
 const PRICES = {
@@ -23,7 +25,20 @@ class BurgerBuilder extends Component {
       meat: 0,
       cheese: 0
     },
-    totalPrice: 3
+    totalPrice: 3,
+    available: false,
+    checkout: false
+  }
+
+  updateAvailableState (ingredients) {
+    const sum = Object.keys(ingredients).map(igKey => {
+      return ingredients[igKey];
+    }).reduce((sum, el) => {
+      return sum + el;
+    }, 0);
+    this.setState({
+      available: sum > 0,
+    });
   }
 
   addIngredientHandler = (type) => {
@@ -42,6 +57,7 @@ class BurgerBuilder extends Component {
       ingredients: updatedIngredients,
       totalPrice: updatedPrice
     });
+    this.updateAvailableState(updatedIngredients);
   }
 
   removeIngredientHandler = (type) => {
@@ -64,7 +80,26 @@ class BurgerBuilder extends Component {
       ingredients: updatedIngredients,
       totalPrice: updatedPrice
     });
+    this.updateAvailableState(updatedIngredients);
   }
+
+  checkoutButtonHandler = () => {
+    this.setState({
+      checkout: true
+    });
+  }
+
+  modalClosedHandler = () => {
+    this.setState({
+      checkout: false
+    });
+  }
+
+  checkoutHandler = () => {
+    alert('Continuing to checkout');
+  }
+
+  
 
   render () {
     const disabledState = {
@@ -75,15 +110,27 @@ class BurgerBuilder extends Component {
     }
     return (
       <Aux>
+        <Modal
+          display={this.state.checkout}
+          modalClosed={this.modalClosedHandler}
+        >
+          <OrderSummary
+            ingredients={this.state.ingredients}
+            purchaseCanceled={this.modalClosedHandler}
+            continueCheckout={this.checkoutHandler}
+            price={this.state.totalPrice}
+          />
+        </Modal>
         <Burger
           ingredients={this.state.ingredients}
         />
-        <div>Build controls - add / remove ingredients</div>
         <BuildControls
           ingredientAdded={this.addIngredientHandler}
           ingredientRemoved={this.removeIngredientHandler}
+          checkout={this.checkoutButtonHandler}
           disabled={disabledState}
           price={this.state.totalPrice}
+          available={this.state.available}
         />
       </Aux>
     );

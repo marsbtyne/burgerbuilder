@@ -1,0 +1,11 @@
+.Logo {
+  background-color: white;
+  padding: 7px;
+  height: 100%; /* Restrict height in sidebar and toolebar component */
+  box-sizing: border-box;
+  border-radius: 6px;
+}
+
+.Logo img {
+  height: 100%
+}
