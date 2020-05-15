@@ -1,9 +1,14 @@
 import React, { Component } from 'react';
 import Aux from '../../hoc/Aux'
+import withErrorHandler from '../../hoc/withErrorHandler/withErrorHandler';
 import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/Burger/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary';
+import Spinner from '../../components/UI/Spinner/Spinner';
+
+
+import axiosInstance from '../../axios-orders';
 
 
 const PRICES = {
@@ -19,17 +24,23 @@ class BurgerBuilder extends Component {
   // }
   state = {
     // keys are the names of the ingredients and values are amounts
-    ingredients: {
-      lettuce: 0,
-      bacon: 0,
-      meat: 0,
-      cheese: 0
-    },
+    ingredients: null,
     totalPrice: 3,
     available: false,
-    checkout: false
+    checkout: false,
+    loading: false,
+    error: false,
   }
 
+  componentDidMount (){
+    axiosInstance.get('/ingredients.json')
+      .then(response => {
+        this.setState({
+          ingredients: response.data
+        });
+      })
+      .catch(error => {this.setState({error: true})});
+  }
   updateAvailableState (ingredients) {
     const sum = Object.keys(ingredients).map(igKey => {
       return ingredients[igKey];
@@ -96,7 +107,19 @@ class BurgerBuilder extends Component {
   }
 
   checkoutHandler = () => {
-    alert('Continuing to checkout');
+    // 
+    // Go to checkout component instead
+    const queryParams = [];
+    for (let i in this.state.ingredients) {
+      queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.ingredients[i]));
+    }
+    queryParams.push('price=' + this.state.totalPrice)
+    const queryString = queryParams.join('&');
+    this.props.history.push({
+      pathname: '/checkout',
+      search: '?' + queryString
+    });
+
   }
 
   
@@ -108,33 +131,49 @@ class BurgerBuilder extends Component {
     for (let key in disabledState) {
       disabledState[key] = (disabledState[key] <= 0)
     }
+    let orderSummary = null;
+
+    let burger = this.state.error ? 
+      <p>The application is not available. Please try again later. </p> :
+      <Spinner />
+    if (this.state.ingredients) {
+      orderSummary = 
+        <OrderSummary
+          ingredients={this.state.ingredients}
+          purchaseCanceled={this.modalClosedHandler}
+          continueCheckout={this.checkoutHandler}
+          price={this.state.totalPrice}
+        />;
+      burger = 
+        <Aux>
+          <Burger ingredients={this.state.ingredients}/>
+          <BuildControls
+            ingredientAdded={this.addIngredientHandler}
+            ingredientRemoved={this.removeIngredientHandler}
+            checkout={this.checkoutButtonHandler}
+            disabled={disabledState}
+            price={this.state.totalPrice}
+            available={this.state.available}
+          />
+        </Aux>
+    }
+    if (this.state.loading){
+      orderSummary = <Spinner />
+    }
     return (
       <Aux>
         <Modal
           display={this.state.checkout}
           modalClosed={this.modalClosedHandler}
         >
-          <OrderSummary
-            ingredients={this.state.ingredients}
-            purchaseCanceled={this.modalClosedHandler}
-            continueCheckout={this.checkoutHandler}
-            price={this.state.totalPrice}
-          />
+          {orderSummary}
         </Modal>
-        <Burger
-          ingredients={this.state.ingredients}
-        />
-        <BuildControls
-          ingredientAdded={this.addIngredientHandler}
-          ingredientRemoved={this.removeIngredientHandler}
-          checkout={this.checkoutButtonHandler}
-          disabled={disabledState}
-          price={this.state.totalPrice}
-          available={this.state.available}
-        />
+        {burger}
       </Aux>
     );
   }
 }
 
-export default BurgerBuilder;
+// Wrap the burgerBuilder with the error handler hoc, which is a function that returns the wrapped component with an error modal
+
+export default withErrorHandler(BurgerBuilder, axiosInstance);

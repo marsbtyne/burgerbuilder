@@ -13,7 +13,6 @@ import BurgerIngredient from './BurgerIngredient/BurgerIngredient'
     }).reduce((arr, el) => {
       return arr.concat(el);
     }, []);
-    console.log(transformedIngredients);
     //transform 'cheese' string (from Object.keys) into an arry that contains the number of cheese
 
     if (transformedIngredients.length === 0) {
@@ -29,4 +28,4 @@ import BurgerIngredient from './BurgerIngredient/BurgerIngredient'
       </div>
     );
   };
-export default burger;
+export default (burger);
